@@ -132,10 +132,11 @@ public class Backend {
     }
 
     private void sendBinaryMessage(Session session, Protocol.CommandAuthorization commandAuthorization) {
-        //TODO: stream!
         final byte[] bytes = commandAuthorization.toByteArray();
         // following is the sync option
         // session.getBasicRemote().sendBinary(ByteBuffer.wrap(bytes));
+
+        // btw, streaming doesn't make sense here because of async. it is not supported by async remote anyway!
         session.getAsyncRemote().sendBinary(ByteBuffer.wrap(bytes));
     }
 
