@@ -1,6 +1,5 @@
 package tr.com.aliok.wpeb;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tr.com.aliok.wpeb.protocol.Protocol;
@@ -10,7 +9,6 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Ali Ok (ali.ok@apache.org)
  *         11/08/2015 23:58
  */
-@ServerEndpoint(value = "/backend")
+@ServerEndpoint(value = "/backend", decoders = {CommandRequestDecoder.class}, encoders = {CommandAuthorizationEncoder.class})
 public class Backend {
     private static final String ATTR_KEY_USERNAME = "ATTR_KEY_USERNAME";
 
@@ -48,7 +46,7 @@ public class Backend {
                 .setUserJoinAction(Protocol.UserJoinAction.newBuilder().setUserCount(sessions.size()))
                 .build();
 
-        this.sendBinaryMessageToAll(commandAuthorization);
+        this.sendCommandAuthorizationToAll(commandAuthorization);
     }
 
     @OnMessage
@@ -57,15 +55,8 @@ public class Backend {
     }
 
     @OnMessage
-    public void onBinaryMessage(ByteBuffer byteBuffer, Session session) {
-        LOG.info("Binary Message from " + session.getId() + " : " + byteBuffer);
-        final Protocol.CommandRequest commandRequest;
-        try {
-            commandRequest = Protocol.CommandRequest.parseFrom(byteBuffer.array());
-        } catch (InvalidProtocolBufferException e) {
-            LOG.error("Received a corrupt binary message: " + byteBuffer, e);
-            return;
-        }
+    public void onBinaryMessage(Protocol.CommandRequest commandRequest, Session session) {
+        LOG.info("Command request from " + session.getId() + " : " + commandRequest);
 
         final Protocol.ActionType actionType = commandRequest.getActionType();
         if (actionType == null) {
@@ -83,7 +74,7 @@ public class Backend {
                         .setActionType(Protocol.ActionType.ORDER_PIZZA)
                         .setOrderPizzaAction(commandRequest.getOrderPizzaAction())
                         .build();
-                this.sendBinaryMessageToAll(commandAuthorization);
+                this.sendCommandAuthorizationToAll(commandAuthorization);
                 break;
             }
             case PLAY_VIDEO_GAME: {
@@ -91,7 +82,7 @@ public class Backend {
                         .setActionType(Protocol.ActionType.PLAY_VIDEO_GAME)
                         .setPlayVideoGameAction(commandRequest.getPlayVideoGameAction())
                         .build();
-                this.sendBinaryMessageToAll(commandAuthorization);
+                this.sendCommandAuthorizationToAll(commandAuthorization);
                 break;
             }
             case DRINK_TEA: {
@@ -99,7 +90,7 @@ public class Backend {
                         .setActionType(Protocol.ActionType.DRINK_TEA)
                         .setDrinkTeaAction(commandRequest.getDrinkTeaAction())
                         .build();
-                this.sendBinaryMessageToAll(commandAuthorization);
+                this.sendCommandAuthorizationToAll(commandAuthorization);
                 break;
             }
             default: {
@@ -122,22 +113,21 @@ public class Backend {
                 .setUserLeaveAction(Protocol.UserLeaveAction.newBuilder().setUserCount(sessions.size()))
                 .build();
 
-        sendBinaryMessageToAll(commandAuthorization);
+        sendCommandAuthorizationToAll(commandAuthorization);
     }
 
-    private void sendBinaryMessageToAll(Protocol.CommandAuthorization commandAuthorization) {
+    private void sendCommandAuthorizationToAll(Protocol.CommandAuthorization commandAuthorization) {
         for (Session session : sessions) {
-            this.sendBinaryMessage(session, commandAuthorization);
+            this.sendCommandAuthorization(session, commandAuthorization);
         }
     }
 
-    private void sendBinaryMessage(Session session, Protocol.CommandAuthorization commandAuthorization) {
-        final byte[] bytes = commandAuthorization.toByteArray();
+    private void sendCommandAuthorization(Session session, Protocol.CommandAuthorization commandAuthorization) {
         // following is the sync option
-        // session.getBasicRemote().sendBinary(ByteBuffer.wrap(bytes));
+        // session.getBasicRemote().sendBinary(ByteBuffer.wrap(commandAuthorization.toByteArray()));
 
         // btw, streaming doesn't make sense here because of async. it is not supported by async remote anyway!
-        session.getAsyncRemote().sendBinary(ByteBuffer.wrap(bytes));
+        session.getAsyncRemote().sendObject(commandAuthorization);
     }
 
 }

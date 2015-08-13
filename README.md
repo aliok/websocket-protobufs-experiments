@@ -15,3 +15,4 @@ Websocket example with protocol buffers
 
 * Bash script for starting the whole thing. With runmodes...
 
+* Debug mode for proto buf data sent over the wire?
