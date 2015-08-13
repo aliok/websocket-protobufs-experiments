@@ -111,6 +111,9 @@ $(function () {
     function handleMessage(data) {
         var commandAuthorization = CommandAuthorization.decode(data);
 
+        console.log("Received message.");
+        console.log(commandAuthorization.encodeJSON());
+
         var user = commandAuthorization.userName;
         // time received from proto buf is a "long.js" long
         // let's convert it to nearest number approximation

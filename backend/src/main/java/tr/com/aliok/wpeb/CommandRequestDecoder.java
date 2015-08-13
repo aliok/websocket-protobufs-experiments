@@ -1,6 +1,7 @@
 package tr.com.aliok.wpeb;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tr.com.aliok.wpeb.protocol.Protocol;
@@ -22,7 +23,10 @@ public class CommandRequestDecoder implements Decoder.Binary<Protocol.CommandReq
     public Protocol.CommandRequest decode(ByteBuffer bytes) throws DecodeException {
         LOG.info("To be decoded: " + bytes);
         try {
-            return Protocol.CommandRequest.parseFrom(bytes.array());
+            final Protocol.CommandRequest commandRequest = Protocol.CommandRequest.parseFrom(bytes.array());
+            final String strRepresentation = TextFormat.shortDebugString(commandRequest);
+            LOG.info("Decoded. Result: " + strRepresentation);
+            return commandRequest;
         } catch (InvalidProtocolBufferException e) {
             LOG.error("Received a corrupt binary message: " + bytes, e);
             return null;
