@@ -10,7 +10,6 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashSet;
@@ -133,14 +132,11 @@ public class Backend {
     }
 
     private void sendBinaryMessage(Session session, Protocol.CommandAuthorization commandAuthorization) {
-        try {
-            //TODO: play with async vs sync etc.
-            //TODO: stream!
-            final byte[] bytes = commandAuthorization.toByteArray();
-            session.getBasicRemote().sendBinary(ByteBuffer.wrap(bytes));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //TODO: stream!
+        final byte[] bytes = commandAuthorization.toByteArray();
+        // following is the sync option
+        // session.getBasicRemote().sendBinary(ByteBuffer.wrap(bytes));
+        session.getAsyncRemote().sendBinary(ByteBuffer.wrap(bytes));
     }
 
 }
