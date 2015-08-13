@@ -23,6 +23,7 @@ gulp.task('browser-sync', function () {
             baseDir: "./target",
             index: "index.html"
         },
+        ghostMode: false,
         injectChanges: true,
         open: false
     });

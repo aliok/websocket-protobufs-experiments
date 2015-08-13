@@ -27,14 +27,16 @@ public class Backend {
 
     private static final Logger LOG = LoggerFactory.getLogger(Backend.class);
 
-    private final Set<Session> sessions = Collections.synchronizedSet(new HashSet<Session>());
-    private final AtomicInteger indexOfLastUser = new AtomicInteger(0);
+    // Backend class is stateless. that's why following two are static
+    // in production code, you'd inject state!
+    private static final Set<Session> sessions = Collections.synchronizedSet(new HashSet<Session>());
+    private static final AtomicInteger indexOfLastUser = new AtomicInteger(0);
 
 
     @OnOpen
     public void onOpen(Session session) {
-        LOG.info("Connected: " + session.getId());
         sessions.add(session);
+        LOG.info("Connected: " + session.getId() + ". Number of sessions : " + sessions.size());
 
         final int userIndex = indexOfLastUser.getAndIncrement();
         final String userName = "User #" + userIndex;
@@ -42,7 +44,7 @@ public class Backend {
 
         final Protocol.CommandAuthorization commandAuthorization = Protocol.CommandAuthorization.newBuilder()
                 .setActionType(Protocol.ActionType.USER_JOIN)
-                .setTime((int) System.currentTimeMillis())
+                .setTime(System.currentTimeMillis())
                 .setUserName(userName)
                 .setUserJoinAction(Protocol.UserJoinAction.newBuilder().setUserCount(sessions.size()))
                 .build();
@@ -74,7 +76,7 @@ public class Backend {
 
         final String userName = (String) session.getUserProperties().get(ATTR_KEY_USERNAME);
         final Protocol.CommandAuthorization.Builder builder = Protocol.CommandAuthorization.newBuilder();
-        builder.setTime((int) System.currentTimeMillis()).setUserName(userName);
+        builder.setTime(System.currentTimeMillis()).setUserName(userName);
 
         switch (actionType) {
             case ORDER_PIZZA: {
@@ -110,13 +112,13 @@ public class Backend {
 
     @OnClose
     public void onClose(Session session) {
-        LOG.info("Left: " + session.getId());
         sessions.remove(session);
+        LOG.info("Left: " + session.getId() + ". Number of remaining sessions : " + sessions.size());
 
         final String userName = (String) session.getUserProperties().get(ATTR_KEY_USERNAME);
         final Protocol.CommandAuthorization commandAuthorization = Protocol.CommandAuthorization.newBuilder()
-                .setActionType(Protocol.ActionType.USER_JOIN)
-                .setTime((int) System.currentTimeMillis())
+                .setActionType(Protocol.ActionType.USER_LEAVE)
+                .setTime(System.currentTimeMillis())
                 .setUserName(userName)
                 .setUserLeaveAction(Protocol.UserLeaveAction.newBuilder().setUserCount(sessions.size()))
                 .build();

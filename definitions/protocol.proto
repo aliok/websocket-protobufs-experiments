@@ -20,8 +20,7 @@ message CommandAuthorization{
   required ActionType actionType = 1;
 
   required string userName = 2;
-  // following should be int64 after year 2038
-  required uint32 time = 3;
+  required int64 time = 3;
 
   optional UserJoinAction userJoinAction = 4;
   optional UserLeaveAction userLeaveAction = 5;

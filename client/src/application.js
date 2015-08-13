@@ -61,6 +61,13 @@ $(function () {
         });
     });
 
+    // Prevent ESC to kill the connection from Firefox.
+    jQuery(window).keypress(function (e) {
+        if (e.keyCode === 27) {
+            e.preventDefault();
+        }
+    });
+
     connection.onopen = function (event) {
         content.html($('<p>', {text: 'Websocket connected'}));
     };
@@ -75,7 +82,7 @@ $(function () {
         handleMessage(data);
 
         //var date = typeof(json.time) == 'string' ? parseInt(json.time) : json.time;
-        //addMessage(json.author, json.message, me ? 'blue' : 'black', new Date(date));
+        //showMessage(json.author, json.message, me ? 'blue' : 'black', new Date(date));
     };
 
     connection.onclose = function (event) {
@@ -92,6 +99,7 @@ $(function () {
     };
 
     var sendMessage = function (commandRequest) {
+        console.log('sendMessage', commandRequest);
         if (connection.readyState === WebSocket.OPEN) {
             connection.send(commandRequest.toArrayBuffer());
         }
@@ -104,51 +112,54 @@ $(function () {
         var commandAuthorization = CommandAuthorization.decode(data);
 
         var user = commandAuthorization.userName;
-        var timeMsec = commandAuthorization.time;
+        // time received from proto buf is a "long.js" long
+        // let's convert it to nearest number approximation
+        // following will fail in year 2038
+        var timeMsec = commandAuthorization.time.toNumber();
         var date = new Date(timeMsec);
 
         switch (commandAuthorization.actionType) {
             case ActionType.USER_JOIN:
             {
                 var userCount = commandAuthorization.userJoinAction.userCount;
-                addMessage(user, "Joined... Logged in users:" + userCount, "green", date);
+                showMessage(user, "Joined... Logged in users:" + userCount, "green", date);
                 break;
             }
             case ActionType.USER_LEAVE:
             {
                 var userCount = commandAuthorization.userLeaveAction.userCount;
-                addMessage(user, "Left... Logged in users: " + userCount, "red", date);
+                showMessage(user, "Left... Logged in users: " + userCount, "red", date);
                 break;
             }
             case ActionType.ORDER_PIZZA:
             {
                 var pizzaName = commandAuthorization.orderPizzaAction.pizzaName;
                 var count = commandAuthorization.orderPizzaAction.count;
-                addMessage(user, "Ordered " + count + " " + pizzaName + " pizza(s).", "blue", date);
+                showMessage(user, "Ordered " + count + " " + pizzaName + " pizza(s).", "blue", date);
                 break;
             }
             case ActionType.PLAY_VIDEO_GAME:
             {
                 var videoGameName = commandAuthorization.playVideoGameAction.videoGameName;
                 var players = commandAuthorization.playVideoGameAction.players;
-                addMessage(user, "Playing " + videoGameName + " with " + players + " player(s).", "blue", date);
+                showMessage(user, "Playing " + videoGameName + " with " + players + " player(s).", "blue", date);
                 break;
             }
             case ActionType.DRINK_TEA:
             {
                 var region = commandAuthorization.drinkTeaAction.region;
                 var temperature = commandAuthorization.drinkTeaAction.temperature;
-                addMessage(user, "Drinking tea from " + region + " at " + temperature + " degree(s) Celcius.", "blue", date);
+                showMessage(user, "Drinking tea from " + region + " at " + temperature + " degree(s) Celcius.", "blue", date);
                 break;
             }
             default:
             {
-                addMessage(user, "Unknown action with type " + commandAuthorization.actionType + ".");
+                showMessage(user, "Unknown action with type " + commandAuthorization.actionType + ".");
             }
         }
     }
 
-    function addMessage(author, message, color, datetime) {
+    function showMessage(author, message, color, datetime) {
         content.append('<p><span style="text-decoration: underline; color:' + color + '">' + author + '</span> @ ' + datetime + ': ' + "<br/>" + message + '</p>');
     }
 });
